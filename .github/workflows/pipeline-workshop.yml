@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,24 +15,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[async]
           pip install pytest pytest-cov
-      
+
       - name: Build project
         run: |
           echo "Building Flask project..."
           pip install build
           python -m build
-      
+
       - name: Cache build artifacts
         uses: actions/cache@v4
         with:
@@ -48,33 +48,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
-      
+          fetch-depth: 0
+
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: .
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
 
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[async]
           pip install pytest pytest-cov
-      
+
       - name: Run tests
         run: |
           pytest tests/
@@ -92,22 +91,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[async]
           pip install pytest pytest-cov
-      
+
       - name: Generate coverage report
         run: |
           pytest --cov=src --cov-report=xml --cov-report=html tests/
-      
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -116,7 +115,7 @@ jobs:
             coverage.xml
             htmlcov/
           if-no-files-found: error
-      
+
       - name: Coverage threshold check
         run: |
           COVERAGE=$(python -c "import xml.etree.ElementTree as ET; print(ET.parse('coverage.xml').getroot().attrib['line-rate'])")

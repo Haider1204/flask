@@ -40,7 +40,13 @@ jobs:
             ./dist
             ./build
           key: ${{ runner.os }}-build-${{ github.sha }}
-
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
   codeql:
     name: Code Scanning - CodeQL
     needs: build

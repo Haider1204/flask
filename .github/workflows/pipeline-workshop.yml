@@ -58,7 +58,7 @@ jobs:
         with:
           args: >-
             -Dsonar.projectKey=Haider1204_flask
-            -Dsonar.organization=Haider Estiven Rodriguez Pinto
+            -Dsonar.organization="Haider Estiven Rodriguez Pinto"
             -Dsonar.autoconfig.disabled=true
 
   test:

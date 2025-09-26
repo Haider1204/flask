@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e .[async]
           pip install pytest pytest-cov
       
       - name: Build project
@@ -51,10 +51,12 @@ jobs:
           fetch-depth: 0 
       
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-c-plugin@v1.1
+        uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
 
   test:
     name: Unit Tests
@@ -70,7 +72,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e .[async]
           pip install pytest pytest-cov
       
       - name: Run tests
@@ -99,7 +101,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e .[async]
           pip install pytest pytest-cov
       
       - name: Generate coverage report

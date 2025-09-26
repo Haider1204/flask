@@ -2,10 +2,10 @@ name: Flask Workshop Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Permite ejecutar el workflow manualmente desde la interfaz de GitHub
+    branches: [ main ]
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Necesario para SonarCloud
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -48,13 +48,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Recommended for better SonarCloud results
+          fetch-depth: 0 
       
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: >
             -Dsonar.projectKey=${{ github.repository_owner }}_flask
@@ -62,6 +63,7 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.python.xunit.reportPath=test-results.xml
+            -Dsonar.autoconfig.disabled=true
 
   test:
     name: Unit Tests
@@ -85,7 +87,7 @@ jobs:
           pytest tests/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results.xml
@@ -114,7 +116,7 @@ jobs:
           pytest --cov=src --cov-report=xml --cov-report=html tests/
       
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: |

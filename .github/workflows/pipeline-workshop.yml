@@ -41,25 +41,31 @@ jobs:
             ./build
           key: ${{ runner.os }}-build-${{ github.sha }}
 
-  sonarcloud:
-    name: Code Analysis
+  codeql:
+    name: Code Scanning - CodeQL
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['python']
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
-          fetch-depth: 0
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
         with:
-          args: >-
-            -Dsonar.projectKey=Haider1204_flask
-            -Dsonar.organization=Haider1204
-            -Dsonar.autoconfig.disabled=true
+          category: "/language:${{ matrix.language }}"
 
   test:
     name: Unit Tests

@@ -1,0 +1,133 @@
+name: Flask Workshop Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permite ejecutar el workflow manualmente desde la interfaz de GitHub
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Necesario para SonarCloud
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+      
+      - name: Build project
+        run: |
+          echo "Building Flask project..."
+          pip install build
+          python -m build
+      
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./dist
+            ./build
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+  sonarcloud:
+    name: Code Analysis
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Recommended for better SonarCloud results
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ github.repository_owner }}_flask
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.sources=src
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.xunit.reportPath=test-results.xml
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+      
+      - name: Run tests
+        run: |
+          pytest tests/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results.xml
+          if-no-files-found: ignore
+
+  coverage:
+    name: Coverage Analysis
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+      
+      - name: Generate coverage report
+        run: |
+          pytest --cov=src --cov-report=xml --cov-report=html tests/
+      
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: error
+      
+      - name: Coverage threshold check
+        run: |
+          COVERAGE=$(python -c "import xml.etree.ElementTree as ET; print(ET.parse('coverage.xml').getroot().attrib['line-rate'])")
+          COVERAGE_PERCENTAGE=$(python -c "print(round(float($COVERAGE) * 100, 2))")
+          echo "Coverage: $COVERAGE_PERCENTAGE%"
+          if (( $(echo "$COVERAGE_PERCENTAGE < 70" | bc -l) )); then
+            echo "Coverage is less than 70%"
+            exit 1
+          fi
